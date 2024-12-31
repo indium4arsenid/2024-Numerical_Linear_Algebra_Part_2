@@ -26,7 +26,7 @@ ENABLE_PLOT_GRAPH = True       # Visualize the web graph with PageRank
 USE_SPARSE_MATRICES = False    # Use sparse matrices for adjacency and Google matrices
 
 # Save Directory for Plots
-SAVE_DIRECTORY = "plots"        # Directory to save the plots (set to None to disable saving)
+SAVE_DIRECTORY = "plots_inc"        # Directory to save the plots (set to None to disable saving)
 
 # ========================
 # Configure Logging
