@@ -304,7 +304,7 @@ def main():
     # ========================
     # Compute PageRank using Power Method
     # ========================
-    x_pagerank, norms = power_method(G, tol=TOLERANCE, max_iter=MAX_ITERATIONS, verbose=ENABLE_VERBOSE)
+    x_pagerank, norms = power_method(G.T, tol=TOLERANCE, max_iter=MAX_ITERATIONS, verbose=ENABLE_VERBOSE)
 
     # ========================
     # Output Results
