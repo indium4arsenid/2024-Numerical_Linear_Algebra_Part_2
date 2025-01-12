@@ -20,7 +20,7 @@ TARGET = 0                 # Target website to funnel PageRank to
 
 # Visualization Flags
 ENABLE_VERBOSE = False         # Enable verbose output
-ENABLE_VISUALIZE = False        # Plot the PageRank distribution
+ENABLE_VISUALIZE = True        # Plot the PageRank distribution
 ENABLE_PLOT_CONVERGENCE = True # Plot the convergence of the power method
 ENABLE_PLOT_GRAPH = False       # Visualize the web graph with PageRank
 
@@ -28,7 +28,11 @@ ENABLE_PLOT_GRAPH = False       # Visualize the web graph with PageRank
 USE_SPARSE_MATRICES = False    # Use sparse matrices for adjacency and Google matrices
 
 # Save Directory for Plots
-SAVE_DIRECTORY = "plots_task_d"        # Directory to save the plots (set to None to disable saving)
+SAVE_DIRECTORY = "plots_task_d"
+PLOTS_SUBFOLDER = "pagerank_comparisons"
+
+plots_dir = os.path.join(SAVE_DIRECTORY, PLOTS_SUBFOLDER)
+os.makedirs(plots_dir, exist_ok=True)
 
 # ========================
 # Configure Logging
@@ -305,6 +309,42 @@ def print_matrix(name, matrix):
     else:
         print(matrix)
 
+def plot_pagerank_comparison(x_before, x_after, target_index, title, save_path=None):
+    """
+    Compares PageRank values before and after applying a link farm.
+
+    Parameters:
+    - x_before (numpy.ndarray): PageRank vector before the link farm.
+    - x_after (numpy.ndarray): PageRank vector after the link farm.
+    - target_index (int): Index of the target website (in the original graph).
+    - title (str): Title of the plot.
+    - save_path (str, optional): File path to save the plot.
+    """
+    plt.figure(figsize=(12, 6))
+    original_indices = np.arange(len(x_before))  # original websites
+    
+    # Plot PageRank before link farm
+    plt.plot(original_indices, x_before, label='Before Link Farm', color='blue', alpha=0.7)
+    
+    # Plot PageRank after link farm (only for original websites)
+    plt.plot(original_indices, x_after[:len(x_before)], label='After Link Farm', color='red', alpha=0.7)
+    
+    # Highlight the target website
+    plt.scatter([target_index], [x_before[target_index]], color='green', label='Target (Before)', zorder=5)
+    plt.scatter([target_index], [x_after[target_index]], color='orange', label='Target (After)', zorder=5)
+    
+    plt.xlabel('Website Index')
+    plt.ylabel('PageRank')
+    plt.title(title)
+    plt.legend(loc='upper right')
+    plt.grid(True)
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        logging.info(f"Comparison plot saved to {save_path}")
+    plt.show()
+    plt.close()
+
 def main():
     # ========================
     # Set Up Logging
@@ -375,6 +415,24 @@ def main():
     P_B_INC = adjacency_to_stochastic(B_INC)
     G_B_INC = google_matrix(P_B_INC, alpha=DAMPING_FACTOR, sparse=USE_SPARSE_MATRICES)
     x_pagerank_B_INC, norms_B_INC = power_method(G_B_INC.T, tol=TOLERANCE, max_iter=MAX_ITERATIONS, verbose=ENABLE_VERBOSE)
+
+    # Comparison Plot for Uniform Model
+    plot_pagerank_comparison(
+    x_pagerank_uni,
+    x_pagerank_B_UNI,
+    TARGET_UNI,
+    title="Uniform Model: PageRank Before and After Link Farm",
+    save_path=os.path.join(SAVE_DIRECTORY, "pagerank_comparison_uniform.png")
+)
+
+    # Comparison Plot for Incremental Model
+    plot_pagerank_comparison(
+    x_pagerank_inc,
+    x_pagerank_B_INC,
+    TARGET_INC,
+    title="Incremental Model: PageRank Before and After Link Farm",
+    save_path=os.path.join(SAVE_DIRECTORY, "pagerank_comparison_incremental.png")
+)
 
     # ========================
     # Output Results
