@@ -20,7 +20,7 @@ TARGET = 0                 # Target website to funnel PageRank to
 
 # Visualization Flags
 ENABLE_VERBOSE = False         # Enable verbose output
-ENABLE_VISUALIZE = False        # Plot the PageRank distribution
+ENABLE_VISUALIZE = True        # Plot the PageRank distribution
 ENABLE_PLOT_CONVERGENCE = True # Plot the convergence of the power method
 ENABLE_PLOT_GRAPH = True       # Visualize the web graph with PageRank
 
@@ -253,6 +253,34 @@ def visualize_graph(A, pagerank, title="Web Graph with PageRank", save_path=None
         plt.show()
     plt.close()
 
+def plot_pagerank_comparison(before, after, target_index, title, save_path=None):
+    """
+    Plots a comparison of the PageRank vectors before and after adding the link farm.
+
+    Parameters:
+    - before (numpy.ndarray): PageRank vector before the link farm.
+    - after (numpy.ndarray): PageRank vector after the link farm.
+    - target_index (int): Index of the target website.
+    - title (str): Title of the plot.
+    - save_path (str, optional): File path to save the plot.
+    """
+    plt.figure(figsize=(10, 6))
+    plt.plot(before[:50], 'b-', label='Before Link Farm')
+    plt.plot(after[:50], 'r--', label='After Link Farm')
+    plt.axvline(target_index, color='g', linestyle=':', label='Target Website')
+    plt.xlabel('Website Index')
+    plt.ylabel('PageRank Value')
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+        logging.info(f"PageRank comparison plot saved to {save_path}")
+    if ENABLE_VISUALIZE:
+        plt.show()
+    plt.close()
+
 def print_matrix(name, matrix):
     """
     Prints a matrix with a given name.
@@ -327,6 +355,18 @@ def main():
     G_B = google_matrix(P_B, alpha=DAMPING_FACTOR, sparse=USE_SPARSE_MATRICES)
     x_pagerank_B, norms_B = power_method(G_B.T, tol=TOLERANCE, max_iter=MAX_ITERATIONS, verbose=ENABLE_VERBOSE)
 
+        # ========================
+    # Add additional Websites to funnel PageRank to target
+    # ========================
+    B = link_farm(A, ADD_SITES, TARGET)
+
+    # ========================
+    # Calculate new PageRank
+    # ========================
+    P_B = adjacency_to_stochastic(B)
+    G_B = google_matrix(P_B, alpha=DAMPING_FACTOR, sparse=USE_SPARSE_MATRICES)
+    x_pagerank_B, norms_B = power_method(G_B.T, tol=TOLERANCE, max_iter=MAX_ITERATIONS, verbose=ENABLE_VERBOSE)
+
     # ========================
     # Output Results
     # ========================
@@ -340,28 +380,36 @@ def main():
     # ========================
     # Generate and Save Plots
     # ========================
-    if ENABLE_VISUALIZE:
-        if SAVE_DIRECTORY:
-            pagerank_plot_path = os.path.join(SAVE_DIRECTORY, "pagerank_distribution.png")
-        else:
-            pagerank_plot_path = None
-        plot_pagerank(x_pagerank, save_path=pagerank_plot_path)
-        plot_pagerank(x_pagerank_B, title="PageRank Distribution with additional websites", save_path=pagerank_plot_path)
+    if SAVE_DIRECTORY:
+        os.makedirs(SAVE_DIRECTORY, exist_ok=True)  
 
+    # Plot PageRank Distribution Before and After Link Farm
+    pagerank_before_path = os.path.join(SAVE_DIRECTORY, "pagerank_distribution_before.png")
+    pagerank_after_path = os.path.join(SAVE_DIRECTORY, "pagerank_distribution_after.png")
+    plot_pagerank(x_pagerank, title="PageRank Distribution (Before Link Farm)", save_path=pagerank_before_path)
+    plot_pagerank(x_pagerank_B, title="PageRank Distribution (After Link Farm)", save_path=pagerank_after_path)
+
+    # Plot PageRank Comparison
+    pagerank_comparison_path = os.path.join(SAVE_DIRECTORY, "pagerank_comparison.png")
+    plot_pagerank_comparison(
+        x_pagerank,
+        x_pagerank_B,
+        target_index=TARGET,
+        title="PageRank Comparison (Before and After Link Farm)",
+        save_path=pagerank_comparison_path
+    )
+
+    # Plot Convergence
     if ENABLE_PLOT_CONVERGENCE:
-        if SAVE_DIRECTORY:
-            convergence_plot_path = os.path.join(SAVE_DIRECTORY, "convergence_plot.png")
-        else:
-            convergence_plot_path = None
-        plot_convergence(norms, save_path=convergence_plot_path)
+        convergence_plot_path = os.path.join(SAVE_DIRECTORY, "convergence_plot.png")
+        plot_convergence(norms, title="Power Method Convergence (Before Link Farm)", save_path=convergence_plot_path)
 
+    # Plot Web Graph
     if ENABLE_PLOT_GRAPH:
-        if SAVE_DIRECTORY:
-            graph_plot_path = os.path.join(SAVE_DIRECTORY, "web_graph.png")
-        else:
-            graph_plot_path = None
-        visualize_graph(A, x_pagerank, save_path=graph_plot_path)
-        visualize_graph(B, x_pagerank_B, title="Web Graph with additional websites", save_path=graph_plot_path)
+        web_graph_before_path = os.path.join(SAVE_DIRECTORY, "web_graph_before.png")
+        web_graph_after_path = os.path.join(SAVE_DIRECTORY, "web_graph_after.png")
+        visualize_graph(A, x_pagerank, title="Web Graph with PageRank (Before Link Farm)", save_path=web_graph_before_path)
+        visualize_graph(B, x_pagerank_B, title="Web Graph with PageRank (After Link Farm)", save_path=web_graph_after_path)
 
 if __name__ == "__main__":
     main()
