@@ -355,18 +355,6 @@ def main():
     G_B = google_matrix(P_B, alpha=DAMPING_FACTOR, sparse=USE_SPARSE_MATRICES)
     x_pagerank_B, norms_B = power_method(G_B.T, tol=TOLERANCE, max_iter=MAX_ITERATIONS, verbose=ENABLE_VERBOSE)
 
-        # ========================
-    # Add additional Websites to funnel PageRank to target
-    # ========================
-    B = link_farm(A, ADD_SITES, TARGET)
-
-    # ========================
-    # Calculate new PageRank
-    # ========================
-    P_B = adjacency_to_stochastic(B)
-    G_B = google_matrix(P_B, alpha=DAMPING_FACTOR, sparse=USE_SPARSE_MATRICES)
-    x_pagerank_B, norms_B = power_method(G_B.T, tol=TOLERANCE, max_iter=MAX_ITERATIONS, verbose=ENABLE_VERBOSE)
-
     # ========================
     # Output Results
     # ========================
