@@ -10,12 +10,14 @@ import os
 # ========================
 # Configuration Variables
 # ========================
-NUM_WEBSITES = 20          # Number of websites (n)
+NUM_WEBSITES = 1000          # Number of websites (n)
 BETA = 1.0                 # Baseline probability of linking to less connected websites
 DAMPING_FACTOR = 0.85      # Damping factor (alpha)
 RANDOM_SEED = 42           # Seed for reproducibility
 TOLERANCE = 1e-8           # Tolerance for power method convergence
 MAX_ITERATIONS = 1000      # Maximum iterations for power method
+ADD_SITES = 10            # Number of additional websites for link farm
+TARGET = 0                 # Target website to funnel PageRank to
 
 # Visualization Flags
 ENABLE_VERBOSE = False         # Enable verbose output
@@ -62,9 +64,7 @@ def generate_preferential_adjacency(n, beta, seed=None, sparse=False):
 
     for k in range(1, n):  # Websites are 0-indexed; website 1 is index 0
         j_indices = np.arange(k)  # Websites 0 to k-1
-        print('j_indices',j_indices)
         norm_sum = k * beta + np.count_nonzero(A) # Number of total links + scaled baseline factor
-        print('norm_sum',norm_sum)
         for j in j_indices:
             d_j = np.count_nonzero(A[:, j]) # Number of existing links to website j
             p[j] = (d_j + beta) / norm_sum
@@ -78,6 +78,29 @@ def generate_preferential_adjacency(n, beta, seed=None, sparse=False):
         A = csr_matrix(A)
         logging.debug("Converted adjacency matrix to sparse format.")
     return A
+
+def link_farm(A,m,target):
+    """
+    Add additional websites to funnel PageRank to target website.
+
+    Parameters:
+    - A(numpy.ndarray): Original adjacency matrix.
+    - m (int): Number of additional websites.
+    - target (int): Target website to funnel PageRank to.
+
+    Returns:
+    - numpy.ndarray: Adjacency matrix with additional websites.
+    """
+    n = A.shape[0]
+    B = np.zeros((n+m, n+m))
+    B[:n, :n] = A
+    for i in range(n, n+m):
+        j_indices = np.arange(i-n)+n
+        B[i, target] = 1
+        B[i,j_indices] = 1
+    np.fill_diagonal(B, 0)
+
+    return B
 
 def adjacency_to_stochastic(A):
     """
@@ -286,19 +309,16 @@ def main():
     # Generate Adjacency Matrix
     # ========================
     A = generate_preferential_adjacency(NUM_WEBSITES, beta=BETA, seed=RANDOM_SEED, sparse=USE_SPARSE_MATRICES)
-    print_matrix("Adjacency Matrix (A)", A)
 
     # ========================
     # Convert to Row-Stochastic Matrix
     # ========================
     P = adjacency_to_stochastic(A)
-    print_matrix("Row-Stochastic Matrix (P)", P)
 
     # ========================
     # Construct Google Matrix
     # ========================
     G = google_matrix(P, alpha=DAMPING_FACTOR, sparse=USE_SPARSE_MATRICES)
-    print_matrix("Google Matrix (G)", G)
 
     # ========================
     # Compute PageRank using Power Method
@@ -306,12 +326,31 @@ def main():
     x_pagerank, norms = power_method(G.T, tol=TOLERANCE, max_iter=MAX_ITERATIONS, verbose=ENABLE_VERBOSE)
 
     # ========================
+    # Add additional Websites to funnel PageRank to target
+    # ========================
+    TARGET = np.argmin(x_pagerank)
+    B = link_farm(A, ADD_SITES, TARGET)
+
+    # ========================
+    # Calculate new PageRank
+    # ========================
+    P_B = adjacency_to_stochastic(B)
+    G_B = google_matrix(P_B, alpha=DAMPING_FACTOR, sparse=USE_SPARSE_MATRICES)
+    x_pagerank_B, norms_B = power_method(G_B.T, tol=TOLERANCE, max_iter=MAX_ITERATIONS, verbose=ENABLE_VERBOSE)
+
+    # ========================
     # Output Results
     # ========================
-    print("\nPageRank Vector:")
-    for i, rank in enumerate(x_pagerank):
-        print(f"Website {i+1}: {rank:.6f}")
-    print(f"\nSum of PageRank entries = {x_pagerank.sum():.4f}")
+    print("\n Preferential Attachment Model:")
+    print("\n Before Link Farm:")
+    print(f"\nWebsite with maximum PageRank: {np.argmax(x_pagerank)} PageRank: {np.max(x_pagerank):.6f}")
+    print(f"\nWebsite with minimum PageRank: {np.argmin(x_pagerank)} PageRank: {np.min(x_pagerank):.6f}")
+    print("\n After Link Farm:")
+    print(f"\nWebsite with maximum PageRank: {np.argmax(x_pagerank_B)} PageRank: {np.max(x_pagerank_B):.6f}")
+    print(f'\nPageRank of target website {TARGET}: {x_pagerank_B[TARGET]:.6f}')
+    print(f'\nIncrease in PageRank of target website: {(x_pagerank_B[TARGET] - x_pagerank[TARGET])/x_pagerank[TARGET]*100:.2f}%')
+    print(f'\nDifference between Target and new max PageRank: {x_pagerank_B[TARGET] - np.max(x_pagerank_B):.6f}')
+    print(f'\nDifference between Target and new average PageRank: {x_pagerank_B[TARGET] - np.mean(x_pagerank_B):.6f}')
 
     # ========================
     # Generate and Save Plots
