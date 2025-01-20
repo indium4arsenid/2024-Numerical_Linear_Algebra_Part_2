@@ -359,15 +359,15 @@ def main():
     # Output Results
     # ========================
     print("\n Uniform Model:")
-    print("\n Before Link Farm:")
+    print("\n Before Link Farm, {} existing websites:".format(NUM_WEBSITES))
     print(f"Website with maximum PageRank: {np.argmax(x_pagerank)} PageRank: {np.max(x_pagerank):.6f}")
     print(f"Website with minimum PageRank: {np.argmin(x_pagerank)} PageRank: {np.min(x_pagerank):.6f}")
-    print(f"Percentage of websites with lower PageRank than the target website: {(np.sum(x_pagerank <= x_pagerank[TARGET]) / len(x_pagerank)) * 100:.2f}%")
+    print(f"Percentage of websites with lower PageRank than the target website: {(np.sum(x_pagerank <= x_pagerank[TARGET]) / len(x_pagerank-1)) * 100:.2f}%")
     print("\n After Link Farm with {} additional websites:".format(ADD_SITES))
     print(f"Website with maximum PageRank: {np.argmax(x_pagerank_B)} PageRank: {np.max(x_pagerank_B):.6f}")
     print(f'PageRank of target website {TARGET}: {x_pagerank_B[TARGET]:.6f}')
     print(f'Increase in PageRank of target website: {(x_pagerank_B[TARGET] - x_pagerank[TARGET])/x_pagerank[TARGET]*100:.2f}%')
-    print(f"Percentage of websites with lower PageRank than the target website: {(np.sum(x_pagerank_B <= x_pagerank_B[TARGET]) / len(x_pagerank_B)) * 100:.2f}%")
+    print(f"Percentage of websites with lower PageRank than the target website: {(np.sum(x_pagerank_B <= x_pagerank_B[TARGET]) / len(x_pagerank_B-1)) * 100:.2f}%")
 
     # ========================
     # Generate and Save Plots
