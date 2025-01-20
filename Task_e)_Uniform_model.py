@@ -15,7 +15,7 @@ DAMPING_FACTOR = 0.85      # Damping factor (alpha)
 RANDOM_SEED = 42           # Seed for reproducibility
 TOLERANCE = 1e-8           # Tolerance for power method convergence
 MAX_ITERATIONS = 1000      # Maximum iterations for power method
-ADD_SITES = 29             # Number of additional websites for link farm
+ADD_SITES = 30            # Number of additional websites for link farm
 TARGET = 0                 # Target website to funnel PageRank to
 
 # Visualization Flags
@@ -358,12 +358,16 @@ def main():
     # ========================
     # Output Results
     # ========================
-    print("\nPageRank Vector:")
-    for i, rank in enumerate(x_pagerank):
-        print(f"Website {i}: {rank:.6f}")
-    print(f"\nSum of PageRank entries = {x_pagerank.sum():.4f}")
-    print(f"Website with maximum PageRank: {np.argmax(x_pagerank_B)}")
+    print("\n Uniform Model:")
+    print("\n Before Link Farm:")
+    print(f"Website with maximum PageRank: {np.argmax(x_pagerank)} PageRank: {np.max(x_pagerank):.6f}")
+    print(f"Website with minimum PageRank: {np.argmin(x_pagerank)} PageRank: {np.min(x_pagerank):.6f}")
+    print(f"Percentage of websites with lower PageRank than the target website: {(np.sum(x_pagerank <= x_pagerank[TARGET]) / len(x_pagerank)) * 100:.2f}%")
+    print("\n After Link Farm with {} additional websites:".format(ADD_SITES))
+    print(f"Website with maximum PageRank: {np.argmax(x_pagerank_B)} PageRank: {np.max(x_pagerank_B):.6f}")
     print(f'PageRank of target website {TARGET}: {x_pagerank_B[TARGET]:.6f}')
+    print(f'Increase in PageRank of target website: {(x_pagerank_B[TARGET] - x_pagerank[TARGET])/x_pagerank[TARGET]*100:.2f}%')
+    print(f"Percentage of websites with lower PageRank than the target website: {(np.sum(x_pagerank_B <= x_pagerank_B[TARGET]) / len(x_pagerank_B)) * 100:.2f}%")
 
     # ========================
     # Generate and Save Plots
